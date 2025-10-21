@@ -1,0 +1,66 @@
+﻿@model CMCS1.Models.Claim
+
+@{
+    ViewData["Title"] = "Update Claim";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2 style="text-align:center;color:#2c3e50;">Update Your Claim</h2>
+
+<form asp-action="UpdateClaim" method="post" enctype="multipart/form-data"
+      class="bg-light p-4 rounded shadow-sm" style="max-width:600px; margin:0 auto;">
+
+    <input type="hidden" name="id" value="@Model.GetHashCode()" />
+
+    <div class="form-group">
+        <label asp-for="HoursWorked"></label>
+        <input asp-for="HoursWorked" class="form-control border-primary" type="number" min="1" max="1000" required />
+        <span asp-validation-for="HoursWorked" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mt-3">
+        <label asp-for="HourlyRate"></label>
+        <input asp-for="HourlyRate" class="form-control border-primary" type="number" step="0.01" min="0.01" max="1000.00" required />
+        <span asp-validation-for="HourlyRate" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mt-3">
+        <label asp-for="Notes"></label>
+        <textarea asp-for="Notes" class="form-control border-primary" rows="3" maxlength="500"></textarea>
+        <span asp-validation-for="Notes" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mt-3">
+        <label asp-for="SupportingDocuments"></label>
+        <input type="file" name="SupportingDocuments" class="form-control border-primary" multiple accept=".pdf,.docx,.xlsx" />
+
+        @if (Model.UploadedFileNames?.Any() ?? false)
+        {
+            <ul class="list-group mt-2">
+                @foreach (var file in Model.UploadedFileNames)
+                {
+                    <li class="list-group-item">@file</li>
+                }
+            </ul>
+        }
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg mt-4 w-100">Update</button>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mt-3">
+            Please correct the following errors:
+            <ul>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

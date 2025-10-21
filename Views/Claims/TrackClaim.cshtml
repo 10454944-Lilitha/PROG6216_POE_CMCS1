@@ -1,0 +1,24 @@
+﻿@model CMCS1.Models.Claim
+@{
+    ViewData["Title"] = "Track Claim";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2 style="color: #2c3e50; text-align: center;">Track Your Claim</h2>
+@if (Model == null)
+{
+    <div class="alert alert-warning text-center mt-4" role="alert">
+        No claim data available. Please provide a valid claim ID.
+    </div>
+}
+else
+{
+    <div class="card p-4 mt-3 shadow-sm" style="max-width: 400px; margin: 0 auto;">
+        <p><strong>Hours Worked:</strong> @Model.HoursWorked</p>
+        <p><strong>Hourly Rate:</strong> @Model.HourlyRate.ToString("C")</p>
+        <p><strong>Notes:</strong> @(string.IsNullOrEmpty(Model.Notes) ? "N/A" : Model.Notes)</p>
+        <p><strong>Status:</strong> <span class="badge badge-@(Model.Status == "Approved" ? "success" : Model.Status == "Rejected" ? "danger" : "warning")">@Model.Status</span></p>
+        <p><strong>Last Updated:</strong> @Model.StatusUpdateDate?.ToString("g") ?? "Not updated yet"</p>
+        <p><strong>Documents:</strong> @(string.Join(", ", Model.UploadedFileNames.Any() ? Model.UploadedFileNames : new[] { "None" }))</p>
+    </div>
+}
