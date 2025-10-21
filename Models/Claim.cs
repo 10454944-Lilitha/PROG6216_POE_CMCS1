@@ -16,12 +16,26 @@ namespace CMCS1.Models
         public decimal HourlyRate { get; set; }
 
         [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters.")]
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
 
-        public string Status { get; set; }
-        public DateTime SubmissionDate { get; set; }
+        public string Status { get; set; } = "Pending";
+        public DateTime SubmissionDate { get; set; } = DateTime.Now;
         public DateTime? StatusUpdateDate { get; set; }
-        public List<IFormFile> SupportingDocuments { get; set; }
         public List<string> UploadedFileNames { get; set; } = new List<string>();
+        
+        // Approval tracking
+        public bool Manager1Approved { get; set; } = false;
+        public bool Manager2Approved { get; set; } = false;
+        public DateTime? Manager1ApprovalDate { get; set; }
+        public DateTime? Manager2ApprovalDate { get; set; }
+
+        // Navigation property for feedback
+        public List<Feedback> FeedbackList { get; set; } = new List<Feedback>();
+
+        // Calculated property for total claim amount
+        public decimal TotalAmount => HoursWorked * HourlyRate;
+        
+        // Helper property to check if both managers approved
+        public bool IsFinallyApproved => Manager1Approved && Manager2Approved;
     }
 }

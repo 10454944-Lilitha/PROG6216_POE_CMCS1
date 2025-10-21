@@ -8,7 +8,7 @@ namespace CMCS1.Models.ViewModels
     public class ClaimViewModel
     {
         [Key]
-        public Guid ClaimId { get; set; };
+        public Guid ClaimId { get; set; }
 
         [Required(ErrorMessage = "Hours worked is required.")]
         [Range(1, 1000, ErrorMessage = "Hours must be between 1 and 1000.")]
@@ -21,7 +21,7 @@ namespace CMCS1.Models.ViewModels
         public decimal HourlyRate { get; set; }
 
         [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters.")]
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
 
         public string Status { get; set; } = "Pending";
 
@@ -35,5 +35,8 @@ namespace CMCS1.Models.ViewModels
         public List<IFormFile> SupportingDocuments { get; set; } = new List<IFormFile>();
 
         public List<string> UploadedFileNames { get; set; } = new List<string>();
+
+        // Calculated property for total claim amount
+        public decimal TotalAmount => HoursWorked * HourlyRate;
     }
 }
