@@ -23,7 +23,7 @@
         <span asp-validation-for="Notes" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label asp-for="SupportingDocuments" class="font-weight-bold text-dark">Upload Additional Documents</label>
+        <label class="font-weight-bold text-dark">Upload Additional Documents</label>
         <input type="file" name="SupportingDocuments" class="form-control border-primary" multiple accept=".pdf,.docx,.xlsx" />
         @if (Model.UploadedFileNames?.Any() ?? false)
         {

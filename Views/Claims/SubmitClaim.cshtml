@@ -16,6 +16,10 @@
         <input asp-for="HourlyRate" class="form-control border-primary" type="number" step="0.01" min="0.01" max="1000.00" required />
         <span asp-validation-for="HourlyRate" class="text-danger"></span>
     </div>
+    <div class="alert alert-info mt-3" role="alert">
+        <strong>Total Claim Amount: </strong>
+        <span id="totalAmount" style="font-size: 1.3em; color: #27ae60; font-weight: bold;">$0.00</span>
+    </div>
     <div class="form-group">
         <label asp-for="Notes" class="font-weight-bold text-dark">Additional Notes</label>
         <textarea asp-for="Notes" class="form-control border-primary" rows="3" maxlength="500"></textarea>
@@ -50,4 +54,18 @@
 </form>
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function calculateTotal() {
+            var hours = parseFloat(document.getElementById('HoursWorked').value) || 0;
+            var rate = parseFloat(document.getElementById('HourlyRate').value) || 0;
+            var total = hours * rate;
+            document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+        }
+
+        document.getElementById('HoursWorked').addEventListener('input', calculateTotal);
+        document.getElementById('HourlyRate').addEventListener('input', calculateTotal);
+        
+        // Calculate on page load if values exist
+        window.addEventListener('load', calculateTotal);
+    </script>
 }
