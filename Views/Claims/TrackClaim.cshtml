@@ -13,12 +13,88 @@
 }
 else
 {
-    <div class="card p-4 mt-3 shadow-sm" style="max-width: 400px; margin: 0 auto;">
+    <div class="card p-4 mt-3 shadow-sm" style="max-width: 600px; margin: 0 auto;">
         <p><strong>Hours Worked:</strong> @Model.HoursWorked</p>
         <p><strong>Hourly Rate:</strong> @Model.HourlyRate.ToString("C")</p>
+        <p><strong>Total Amount:</strong> <span style="color: #27ae60; font-size: 1.3em; font-weight: bold;">@Model.TotalAmount.ToString("C")</span></p>
         <p><strong>Notes:</strong> @(string.IsNullOrEmpty(Model.Notes) ? "N/A" : Model.Notes)</p>
-        <p><strong>Status:</strong> <span class="badge badge-@(Model.Status == "Approved" ? "success" : Model.Status == "Rejected" ? "danger" : "warning")">@Model.Status</span></p>
+        <p><strong>Status:</strong> <span class="badge badge-@(Model.Status == "Approved" ? "success" : Model.Status == "Rejected" ? "danger" : Model.Status == "Pending Approval" ? "warning" : "info")" style="color: black;">@Model.Status</span></p>
         <p><strong>Last Updated:</strong> @Model.StatusUpdateDate?.ToString("g") ?? "Not updated yet"</p>
+        
+        <!-- Manager Approval Status -->
+        <div class="card mt-3 mb-3">
+            <div class="card-header bg-light">
+                <strong><i class="fas fa-users"></i> Manager Approval Status</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Manager 1:</strong>
+                        @if (Model.Manager1Approved)
+                        {
+                            <span class="text-success">
+                                <i class="fas fa-check-circle"></i> Approved
+                                <br />
+                                <small class="text-muted">@Model.Manager1ApprovalDate?.ToString("g")</small>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">
+                                <i class="fas fa-clock"></i> Pending Review
+                            </span>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Manager 2:</strong>
+                        @if (Model.Manager2Approved)
+                        {
+                            <span class="text-success">
+                                <i class="fas fa-check-circle"></i> Approved
+                                <br />
+                                <small class="text-muted">@Model.Manager2ApprovalDate?.ToString("g")</small>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">
+                                <i class="fas fa-clock"></i> Pending Review
+                            </span>
+                        }
+                    </div>
+                </div>
+                @if (Model.IsFinallyApproved)
+                {
+                    <div class="alert alert-success mt-3 mb-0">
+                        <i class="fas fa-check-double"></i> <strong>Claim fully approved by both managers!</strong>
+                    </div>
+                }
+                else if (Model.Manager1Approved || Model.Manager2Approved)
+                {
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-hourglass-half"></i> <strong>Partially approved. Waiting for second manager's review.</strong>
+                    </div>
+                }
+            </div>
+        </div>
+        
+        @if (Model.FeedbackList != null && Model.FeedbackList.Any())
+        {
+            <div class="mt-3">
+                <h5><i class="fas fa-comments"></i> Manager Feedback</h5>
+                @foreach (var feedback in Model.FeedbackList.OrderByDescending(f => f.ReviewDate))
+                {
+                    <div class="alert alert-info">
+                        <div class="d-flex justify-content-between">
+                            <strong>@feedback.ReviewedBy</strong>
+                            <small class="text-muted">@feedback.ReviewDate.ToString("g")</small>
+                        </div>
+                        <p class="mb-0 mt-2">@feedback.Message</p>
+                    </div>
+                }
+            </div>
+        }
+        
         <p><strong>Documents:</strong> @(string.Join(", ", Model.UploadedFileNames.Any() ? Model.UploadedFileNames : new[] { "None" }))</p>
     </div>
 }
