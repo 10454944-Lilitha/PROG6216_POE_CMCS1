@@ -10,7 +10,7 @@
 <form asp-action="UpdateClaim" method="post" enctype="multipart/form-data"
       class="bg-light p-4 rounded shadow-sm" style="max-width:600px; margin:0 auto;">
 
-    <input type="hidden" name="id" value="@Model.GetHashCode()" />
+    <input type="hidden" name="id" value="@Model.ClaimId" />
 
     <div class="form-group">
         <label asp-for="HoursWorked"></label>
@@ -24,6 +24,11 @@
         <span asp-validation-for="HourlyRate" class="text-danger"></span>
     </div>
 
+    <div class="alert alert-info mt-3" role="alert">
+        <strong>Total Claim Amount: </strong>
+        <span id="totalAmount" style="font-size: 1.3em; color: #27ae60; font-weight: bold;">@Model.TotalAmount.ToString("C")</span>
+    </div>
+
     <div class="form-group mt-3">
         <label asp-for="Notes"></label>
         <textarea asp-for="Notes" class="form-control border-primary" rows="3" maxlength="500"></textarea>
@@ -31,7 +36,7 @@
     </div>
 
     <div class="form-group mt-3">
-        <label asp-for="SupportingDocuments"></label>
+        <label class="font-weight-bold text-dark">Upload Additional Documents</label>
         <input type="file" name="SupportingDocuments" class="form-control border-primary" multiple accept=".pdf,.docx,.xlsx" />
 
         @if (Model.UploadedFileNames?.Any() ?? false)
@@ -63,4 +68,18 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function calculateTotal() {
+            var hours = parseFloat(document.getElementById('HoursWorked').value) || 0;
+            var rate = parseFloat(document.getElementById('HourlyRate').value) || 0;
+            var total = hours * rate;
+            document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+        }
+
+        document.getElementById('HoursWorked').addEventListener('input', calculateTotal);
+        document.getElementById('HourlyRate').addEventListener('input', calculateTotal);
+        
+        // Calculate on page load
+        window.addEventListener('load', calculateTotal);
+    </script>
 }
