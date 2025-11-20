@@ -257,6 +257,7 @@ namespace CMCS1.Controllers
                 return NotFound("Invalid claim ID.");
             }
 
+
             Claim? existingClaim = null;
 
             // Try to parse as Guid first
