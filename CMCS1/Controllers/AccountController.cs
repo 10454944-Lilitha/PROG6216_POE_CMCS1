@@ -1,38 +1,61 @@
+using CMCS1.Data;
 using CMCS1.Models;
+using CMCS1.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CMCS1.Controllers
 {
     public class AccountController : Controller
     {
-        // GET: Account/SelectRole
+        private readonly AppDbContext _context;
+
+        public AccountController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: Account/Login
         [HttpGet]
-        public IActionResult SelectRole()
+        public IActionResult Login()
         {
             return View();
         }
 
-        // POST: Account/SetRole
+        // POST: Account/Login
         [HttpPost]
-        public IActionResult SetRole(string role)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (string.IsNullOrEmpty(role))
+            if (ModelState.IsValid)
             {
-                return RedirectToAction("SelectRole");
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Username == model.Username && u.Password == model.Password);
+
+                if (user != null)
+                {
+                    // Store user info in session
+                    HttpContext.Session.SetString("UserRole", user.Role);
+                    HttpContext.Session.SetInt32("UserId", user.UserId);
+                    HttpContext.Session.SetString("Username", user.Username);
+
+                    if (user.Role == "Lecturer")
+                    {
+                        return RedirectToAction("Index", "Claims");
+                    }
+                    else if (user.Role == "HR")
+                    {
+                        return RedirectToAction("Dashboard", "HR");
+                    }
+                    else // Manager1 or Manager2
+                    {
+                        return RedirectToAction("ReviewClaims", "Claims");
+                    }
+                }
+
+                ModelState.AddModelError("", "Invalid username or password");
             }
 
-            // Store the role in session
-            HttpContext.Session.SetString("UserRole", role);
-
-            // Redirect based on role
-            if (role == "Lecturer")
-            {
-                return RedirectToAction("Index", "Claims");
-            }
-            else // Manager1 or Manager2
-            {
-                return RedirectToAction("ReviewClaims", "Claims");
-            }
+            return View(model);
         }
 
         // GET: Account/Logout
@@ -40,7 +63,7 @@ namespace CMCS1.Controllers
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("SelectRole");
+            return RedirectToAction("Login");
         }
     }
 }
