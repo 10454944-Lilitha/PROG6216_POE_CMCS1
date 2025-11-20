@@ -37,5 +37,9 @@ namespace CMCS1.Models
         
         // Helper property to check if both managers approved
         public bool IsFinallyApproved => Manager1Approved && Manager2Approved;
+
+        // Foreign Key to User (Lecturer)
+        public int LecturerId { get; set; }
+        public User? Lecturer { get; set; }
     }
 }
