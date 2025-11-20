@@ -16,8 +16,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNet.SignalR.Core.ru" Version="2.4.3" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="DinkToPdf" Version="1.0.8" />
   </ItemGroup>
 
 </Project>

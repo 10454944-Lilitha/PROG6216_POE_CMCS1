@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using DinkToPdf;
+using DinkToPdf.Contracts;
+
 namespace CMCS1
 {
     public class Program
@@ -8,6 +12,13 @@ namespace CMCS1
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Add DbContext
+            builder.Services.AddDbContext<CMCS1.Data.AppDbContext>(options =>
+                options.UseSqlite("Data Source=cmcs.db"));
+
+            // Add PDF converter
+            builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
             
             // Add session support
             builder.Services.AddDistributedMemoryCache();
@@ -19,6 +30,14 @@ namespace CMCS1
             });
 
             var app = builder.Build();
+
+            // Initialize database
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<CMCS1.Data.AppDbContext>();
+                context.Database.EnsureCreated();
+            }
+
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
@@ -39,7 +58,7 @@ namespace CMCS1
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Account}/{action=SelectRole}/{id?}");
+                pattern: "{controller=Account}/{action=Login}/{id?}");
 
             app.Run();
         }
