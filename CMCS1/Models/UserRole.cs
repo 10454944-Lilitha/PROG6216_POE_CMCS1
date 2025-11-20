@@ -4,6 +4,7 @@ namespace CMCS1.Models
     {
         Lecturer,
         Manager1,
-        Manager2
+        Manager2,
+        HR // Super user role
     }
 }

@@ -1,0 +1,172 @@
+@model CMCS1.Models.User
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Edit User</h1>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-danger">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-pencil-fill"></i> Edit User Information</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="EditUser" method="post">
+                        <input type="hidden" asp-for="UserId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="FullName" class="form-label"><strong>Full Name</strong></label>
+                                    <input asp-for="FullName" class="form-control" />
+                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Email" class="form-label"><strong>Email</strong></label>
+                                    <input asp-for="Email" class="form-control" type="email" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Phone" class="form-label"><strong>Phone</strong></label>
+                                    <input asp-for="Phone" class="form-control" />
+                                    <span asp-validation-for="Phone" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Role" class="form-label"><strong>Role</strong></label>
+                                    <select asp-for="Role" class="form-select" id="roleSelect">
+                                        <option value="Lecturer">Lecturer</option>
+                                        <option value="Manager1">Manager 1 (Programme Coordinator)</option>
+                                        <option value="Manager2">Manager 2 (Academic Manager)</option>
+                                        <option value="HR">HR (Super User)</option>
+                                    </select>
+                                    <span asp-validation-for="Role" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3" id="hourlyRateGroup">
+                            <label asp-for="HourlyRate" class="form-label"><strong>Hourly Rate</strong></label>
+                            <div class="input-group">
+                                <span class="input-group-text">R</span>
+                                <input asp-for="HourlyRate" class="form-control" type="number" step="0.01" />
+                            </div>
+                            <small class="form-text text-muted">This rate will be automatically applied to all new claims for this lecturer.</small>
+                            <span asp-validation-for="HourlyRate" class="text-danger d-block"></span>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="mb-3"><i class="bi bi-key-fill"></i> Login Credentials</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Username" class="form-label"><strong>Username</strong></label>
+                                    <input asp-for="Username" class="form-control" />
+                                    <span asp-validation-for="Username" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Password" class="form-label"><strong>Password</strong></label>
+                                    <input asp-for="Password" class="form-control" type="password" />
+                                    <small class="form-text text-muted">Leave blank to keep current password</small>
+                                    <span asp-validation-for="Password" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-warning btn-lg text-dark">
+                                <i class="bi bi-check-circle-fill"></i> Save Changes
+                            </button>
+                            <a asp-action="ManageUsers" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-circle"></i> User Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>User ID:</strong> @Model.UserId</p>
+                    <p><strong>Current Role:</strong> 
+                        @if (Model.Role == "HR")
+                        {
+                            <span class="badge bg-danger">@Model.Role (Super User)</span>
+                        }
+                        else if (Model.Role == "Manager1" || Model.Role == "Manager2")
+                        {
+                            <span class="badge bg-warning text-dark">@Model.Role</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-info">@Model.Role</span>
+                        }
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Important</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="small mb-0">
+                        <li>Changing the role will affect user permissions</li>
+                        <li>Hourly rate changes apply to future claims only</li>
+                        <li>Username changes may affect user login</li>
+                        <li>Notify user of any credential changes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Show/hide hourly rate field based on role selection
+        function toggleHourlyRate() {
+            var roleSelect = document.getElementById('roleSelect');
+            var hourlyRateGroup = document.getElementById('hourlyRateGroup');
+            if (roleSelect.value === 'Lecturer') {
+                hourlyRateGroup.style.display = 'block';
+            } else {
+                hourlyRateGroup.style.display = 'none';
+            }
+        }
+        
+        // Run on page load
+        toggleHourlyRate();
+        
+        // Run on role change
+        document.getElementById('roleSelect').addEventListener('change', toggleHourlyRate);
+    </script>
+}
