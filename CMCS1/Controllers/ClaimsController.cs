@@ -1,6 +1,8 @@
-﻿using CMCS1.Models;
+﻿using CMCS1.Data;
+using CMCS1.Models;
 using CMCS1.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,8 +13,12 @@ namespace CMCS1.Controllers
 {
     public class ClaimsController : Controller
     {
-        private static List<Claim> _claims = new List<Claim>();
-        private static List<Feedback> _feedbacks = new List<Feedback>();
+        private readonly AppDbContext _context;
+
+        public ClaimsController(AppDbContext context)
+        {
+            _context = context;
+        }
 
         private string GetUserRole()
         {
@@ -42,7 +48,7 @@ namespace CMCS1.Controllers
 
         // GET: Claims/Index - Display all claims
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -52,12 +58,18 @@ namespace CMCS1.Controllers
                 return RedirectToAction("ReviewClaims");
             }
 
-            return View(_claims);
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var claims = await _context.Claims
+                .Where(c => c.LecturerId == userId)
+                .OrderByDescending(c => c.SubmissionDate)
+                .ToListAsync();
+
+            return View(claims);
         }
 
         // GET: Claims/SubmitClaim - Display submit form
         [HttpGet]
-        public IActionResult SubmitClaim()
+        public async Task<IActionResult> SubmitClaim()
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -67,7 +79,16 @@ namespace CMCS1.Controllers
                 return RedirectToAction("ReviewClaims");
             }
 
-            return View(new ClaimViewModel());
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var user = await _context.Users.FindAsync(userId);
+
+            var model = new ClaimViewModel();
+            if (user != null && user.HourlyRate.HasValue)
+            {
+                model.HourlyRate = user.HourlyRate.Value;
+            }
+
+            return View(model);
         }
 
         // POST: Claims/SubmitClaim - Handle claim submission
@@ -82,6 +103,22 @@ namespace CMCS1.Controllers
             {
                 return RedirectToAction("ReviewClaims");
             }
+
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            // Auto-set hourly rate
+            if (user.HourlyRate.HasValue)
+            {
+                model.HourlyRate = user.HourlyRate.Value;
+            }
+
+            // Re-validate model after setting rate
+            ModelState.Clear();
+            TryValidateModel(model);
+
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -90,6 +127,7 @@ namespace CMCS1.Controllers
             var claim = new Claim
             {
                 ClaimId = Guid.NewGuid(),
+                LecturerId = userId.Value,
                 HoursWorked = model.HoursWorked,
                 HourlyRate = model.HourlyRate,
                 Notes = model.Notes,
@@ -134,7 +172,8 @@ namespace CMCS1.Controllers
                 }
             }
 
-            _claims.Add(claim);
+            _context.Claims.Add(claim);
+            await _context.SaveChangesAsync();
             return RedirectToAction("Success");
         }
 
@@ -147,33 +186,29 @@ namespace CMCS1.Controllers
 
         // GET: Claims/TrackClaim - Display claim details
         [HttpGet]
-        public IActionResult TrackClaim(string id)
+        public async Task<IActionResult> TrackClaim(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
                 return View(null);
             }
 
+            Claim? claim = null;
+
             // Try to parse as Guid first
             if (Guid.TryParse(id, out Guid claimGuid))
             {
-                var claim = _claims.FirstOrDefault(c => c.ClaimId == claimGuid);
-                return View(claim);
+                claim = await _context.Claims
+                    .Include(c => c.FeedbackList)
+                    .FirstOrDefaultAsync(c => c.ClaimId == claimGuid);
             }
 
-            // Fall back to hash code for backward compatibility
-            if (int.TryParse(id, out int hashCode))
-            {
-                var claim = _claims.FirstOrDefault(c => c.GetHashCode() == hashCode);
-                return View(claim);
-            }
-
-            return View(null);
+            return View(claim);
         }
 
         // GET: Claims/UpdateClaim - Display update form
         [HttpGet]
-        public IActionResult UpdateClaim(string id)
+        public async Task<IActionResult> UpdateClaim(string id)
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -193,12 +228,7 @@ namespace CMCS1.Controllers
             // Try to parse as Guid first
             if (Guid.TryParse(id, out Guid claimGuid))
             {
-                claim = _claims.FirstOrDefault(c => c.ClaimId == claimGuid);
-            }
-            // Fall back to hash code for backward compatibility
-            else if (int.TryParse(id, out int hashCode))
-            {
-                claim = _claims.FirstOrDefault(c => c.GetHashCode() == hashCode);
+                claim = await _context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimGuid);
             }
 
             if (claim == null || claim.Status != "Pending")
@@ -232,18 +262,25 @@ namespace CMCS1.Controllers
             // Try to parse as Guid first
             if (Guid.TryParse(id, out Guid claimGuid))
             {
-                existingClaim = _claims.FirstOrDefault(c => c.ClaimId == claimGuid);
-            }
-            // Fall back to hash code for backward compatibility
-            else if (int.TryParse(id, out int hashCode))
-            {
-                existingClaim = _claims.FirstOrDefault(c => c.GetHashCode() == hashCode);
+                existingClaim = await _context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimGuid);
             }
 
             if (existingClaim == null || existingClaim.Status != "Pending")
             {
                 return NotFound("The claim is not available for update or does not exist.");
             }
+
+            // Auto-set hourly rate from user profile to prevent tampering
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null && user.HourlyRate.HasValue)
+            {
+                model.HourlyRate = user.HourlyRate.Value;
+            }
+            
+            // Re-validate model
+            ModelState.Clear();
+            TryValidateModel(model);
 
             if (!ModelState.IsValid)
             {
@@ -292,12 +329,13 @@ namespace CMCS1.Controllers
                 }
             }
 
+            await _context.SaveChangesAsync();
             return RedirectToAction("TrackClaim", new { id = existingClaim.ClaimId.ToString() });
         }
 
         // GET: Claims/ReviewClaims - Display all claims for managers to review
         [HttpGet]
-        public IActionResult ReviewClaims()
+        public async Task<IActionResult> ReviewClaims()
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -308,7 +346,11 @@ namespace CMCS1.Controllers
             }
 
             // Show all claims for managers
-            var allClaims = _claims.OrderByDescending(c => c.SubmissionDate).ToList();
+            var allClaims = await _context.Claims
+                .Include(c => c.Lecturer)
+                .OrderByDescending(c => c.SubmissionDate)
+                .ToListAsync();
+                
             ViewBag.CurrentUser = GetUserRole();
             return View(allClaims);
         }
@@ -316,7 +358,7 @@ namespace CMCS1.Controllers
         // POST: Claims/ApproveClaim - Handle claim approval/rejection with feedback
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ApproveClaim(string id, string action, string feedback)
+        public async Task<IActionResult> ApproveClaim(string id, string action, string feedback)
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -335,12 +377,9 @@ namespace CMCS1.Controllers
             // Try to parse as Guid first
             if (Guid.TryParse(id, out Guid claimGuid))
             {
-                claim = _claims.FirstOrDefault(c => c.ClaimId == claimGuid);
-            }
-            // Fall back to hash code for backward compatibility
-            else if (int.TryParse(id, out int hashCode))
-            {
-                claim = _claims.FirstOrDefault(c => c.GetHashCode() == hashCode);
+                claim = await _context.Claims
+                    .Include(c => c.FeedbackList)
+                    .FirstOrDefaultAsync(c => c.ClaimId == claimGuid);
             }
 
             if (claim == null)
@@ -395,9 +434,11 @@ namespace CMCS1.Controllers
                     ReviewedBy = currentManager,
                     ReviewDate = DateTime.Now
                 };
-                _feedbacks.Add(feedbackEntry);
+                _context.Feedbacks.Add(feedbackEntry);
                 claim.FeedbackList.Add(feedbackEntry);
             }
+
+            await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = action == "Approve" 
                 ? (claim.Status == "Approved" 
@@ -410,7 +451,7 @@ namespace CMCS1.Controllers
 
         // GET: Claims/Delete - Display delete confirmation
         [HttpGet]
-        public IActionResult Delete(string id)
+        public async Task<IActionResult> Delete(string id)
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -430,12 +471,7 @@ namespace CMCS1.Controllers
             // Try to parse as Guid first
             if (Guid.TryParse(id, out Guid claimGuid))
             {
-                claim = _claims.FirstOrDefault(c => c.ClaimId == claimGuid);
-            }
-            // Fall back to hash code for backward compatibility
-            else if (int.TryParse(id, out int hashCode))
-            {
-                claim = _claims.FirstOrDefault(c => c.GetHashCode() == hashCode);
+                claim = await _context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimGuid);
             }
 
             if (claim == null)
@@ -449,7 +485,7 @@ namespace CMCS1.Controllers
         // POST: Claims/DeleteConfirmed - Handle claim deletion
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(string id)
+        public async Task<IActionResult> DeleteConfirmed(string id)
         {
             var roleCheck = CheckRoleAccess();
             if (roleCheck != null) return roleCheck;
@@ -469,17 +505,13 @@ namespace CMCS1.Controllers
             // Try to parse as Guid first
             if (Guid.TryParse(id, out Guid claimGuid))
             {
-                claim = _claims.FirstOrDefault(c => c.ClaimId == claimGuid);
-            }
-            // Fall back to hash code for backward compatibility
-            else if (int.TryParse(id, out int hashCode))
-            {
-                claim = _claims.FirstOrDefault(c => c.GetHashCode() == hashCode);
+                claim = await _context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimGuid);
             }
 
             if (claim != null)
             {
-                _claims.Remove(claim);
+                _context.Claims.Remove(claim);
+                await _context.SaveChangesAsync();
             }
 
             return RedirectToAction("Index");
